@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전국 석탄화력발전소 신재생 에너지 전환 종합 분석 (61기)</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            background: linear-gradient(135deg, #0066cc 0%, #004c99 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .header .subtitle {
+            font-size: 1em;
+            margin-top: 10px;
+            opacity: 0.8;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        .map-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .map-section h2 {
+            color: #0066cc;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+
+        #map {
+            height: 650px;
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        /* 마커 시각화 모드 전환 */
+        .map-mode-toggle {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #0066cc;
+        }
+
+        .map-mode-toggle h4 {
+            color: #0066cc;
+            margin-bottom: 12px;
+            font-size: 1em;
+        }
+
+        .toggle-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 12px;
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .toggle-btn:hover {
+            border-color: #0066cc;
+            background: #e3f2fd;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+            color: white;
+            border-color: #0066cc;
+        }
+
+        /* 범례 */
+        .legend {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            margin-top: 20px;
+            border: 2px solid #0066cc;
+        }
+
+        .legend h4 {
+            color: #0066cc;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            padding: 5px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            margin-right: 12px;
+        }
+
+        .legend-text {
+            font-size: 0.95em;
+            color: #333;
+        }
+
+        .legend-mode {
+            display: none;
+        }
+
+        .legend-mode.active {
+            display: block;
+        }
+
+        .chart-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-height: 700px;
+        }
+
+        .chart-section h2 {
+            color: #0066cc;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 100px 20px;
+            color: #666;
+        }
+
+        .welcome-message .icon {
+            font-size: 5em;
+            margin-bottom: 20px;
+        }
+
+        .welcome-message h3 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            color: #0066cc;
+        }
+
+        .location-info {
+            background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+        }
+
+        .plant-count-badge {
+            background: rgba(255,193,7,0.9);
+            color: #333;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .lng-badge {
+            background: rgba(255,152,0,0.9);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            display: inline-block;
+            font-size: 0.85em;
+            margin-left: 10px;
+        }
+
+        .location-subtitle {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 10px;
+        }
+
+        .total-score-card {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 15px;
+            box-shadow: 0 5px 15px rgba(255,215,0,0.4);
+            border: 3px solid #FFD700;
+        }
+
+        .total-score-label {
+            font-size: 1em;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .total-score-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .env-variables {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .env-card {
+            background: rgba(255,255,255,0.15);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s;
+        }
+
+        .env-card:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-2px);
+        }
+
+        .env-label {
+            font-size: 0.8em;
+            opacity: 0.85;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .env-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            display: block;
+        }
+
+        .chart-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: #e0e0e0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            background: #d0d0d0;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+            color: white;
+        }
+
+        .chart-wrapper {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 2px solid #e3f2fd;
+            box-shadow: 0 2px 8px rgba(0,102,204,0.08);
+            display: none;
+        }
+
+        .chart-wrapper.active {
+            display: block;
+        }
+
+        .chart-header {
+            background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px 8px 0 0;
+            margin: -25px -25px 20px -25px;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .chart-description {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .ranking-info {
+            background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .ranking-badge {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 1.3em;
+            margin: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .rank-1 {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: white;
+        }
+
+        .rank-2 {
+            background: linear-gradient(135deg, #C0C0C0 0%, #999999 100%);
+            color: white;
+        }
+
+        .rank-3 {
+            background: linear-gradient(135deg, #CD7F32 0%, #B8733D 100%);
+            color: white;
+        }
+
+        .rank-other {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        /* Leaflet 마커 */
+        .custom-marker {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.7em;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        .custom-marker:hover {
+            transform: scale(1.25);
+            z-index: 1000 !important;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.6);
+        }
+
+        .custom-marker.active {
+            animation: pulse 1.5s infinite;
+            border-color: #FFD700;
+            border-width: 4px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            padding: 30px 20px;
+            margin-top: 50px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚡ 전국 석탄화력발전소 신재생 에너지 전환 종합 분석</h1>
+        <p>전국 61기 석탄화력발전소 | 5가지 환경 변수 종합 평가</p>
+        <div class="subtitle">기상청 데이터 + 환경운동연합 석탄발전소 현황 (2025년)</div>
+    </div>
+
+    <div class="container">
+        <!-- 지도 섹션 -->
+        <div class="map-section">
+            <h2>📍 전국 석탄화력발전소 위치 (61기)</h2>
+
+            <!-- 마커 시각화 모드 선택 -->
+            <div class="map-mode-toggle">
+                <h4>🎨 마커 색상 표시 모드</h4>
+                <div class="toggle-buttons">
+                    <button class="toggle-btn active" onclick="switchMapMode('plants')">
+                        🏭 발전소 개수별
+                    </button>
+                    <button class="toggle-btn" onclick="switchMapMode('score')">
+                        ⭐ 태양광 적합도별
+                    </button>
+                </div>
+            </div>
+
+            <div id="map"></div>
+
+            <!-- 범례: 발전소 개수별 -->
+            <div id="legend-plants" class="legend legend-mode active">
+                <h4>🏭 발전소 규모별 색상 범례</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(139, 0, 0, 0.95);"></div>
+                    <div class="legend-text"><strong>10기 이상</strong> (대규모 밀집)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(220, 53, 69, 0.9);"></div>
+                    <div class="legend-text"><strong>6~9기</strong> (다수 운영)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(255, 107, 107, 0.85);"></div>
+                    <div class="legend-text"><strong>3~5기</strong> (중규모)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(255, 165, 0, 0.8);"></div>
+                    <div class="legend-text"><strong>1~2기</strong> (소규모)</div>
+                </div>
+                <div style="margin-top: 10px; padding: 10px; background: #e3f2fd; border-radius: 5px;">
+                    <small style="color: #0066cc;"><strong>💡 참고:</strong> 충남(29기), 경남(14기), 강원(10기), 인천(6기), 전남(2기)</small>
+                </div>
+            </div>
+
+            <!-- 범례: 태양광 적합도별 -->
+            <div id="legend-score" class="legend legend-mode">
+                <h4>⭐ 태양광 적합도별 색상 범례</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(40, 167, 69, 0.95);"></div>
+                    <div class="legend-text"><strong>1~3위</strong> (최적 지역)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(0, 123, 255, 0.85);"></div>
+                    <div class="legend-text"><strong>4~6위</strong> (적합 지역)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(255, 193, 7, 0.8);"></div>
+                    <div class="legend-text"><strong>7~9위</strong> (보통 지역)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(108, 117, 125, 0.75);"></div>
+                    <div class="legend-text"><strong>10위 이하</strong> (검토 필요)</div>
+                </div>
+                <div style="margin-top: 10px; padding: 10px; background: #d4edda; border-radius: 5px;">
+                    <small style="color: #155724;"><strong>💡 참고:</strong> 5가지 환경 변수 종합 점수 기준</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 차트 섹션 -->
+        <div class="chart-section">
+            <h2>📊 5가지 환경 변수 종합 분석</h2>
+            
+            <div id="welcomeMessage" class="welcome-message">
+                <div class="icon">🗺️</div>
+                <h3>지역을 선택해주세요</h3>
+                <p>왼쪽 지도에서 지역을 클릭하면<br>
+                5가지 환경 변수를 종합한 평가를 확인할 수 있습니다.</p>
+                <p style="margin-top: 20px; font-size: 0.95em; color: #999;">
+                    ☀️ 일사량 | ☁️ 구름 | 🌡️ 기온 | 💨 바람 | ❄️ 눈
+                </p>
+            </div>
+
+            <div id="chartContent" style="display: none;">
+                <div class="location-info" id="locationInfo"></div>
+
+                <div class="chart-tabs">
+                    <button class="tab-btn active" onclick="showChart('solar')">☀️ 일사량</button>
+                    <button class="tab-btn" onclick="showChart('cloud')">☁️ 구름</button>
+                    <button class="tab-btn" onclick="showChart('temp')">🌡️ 기온</button>
+                    <button class="tab-btn" onclick="showChart('wind')">💨 바람</button>
+                    <button class="tab-btn" onclick="showChart('snow')">❄️ 눈</button>
+                    <button class="tab-btn" onclick="showChart('total')">🏆 종합</button>
+                </div>
+
+                <div id="chart-solar" class="chart-wrapper active">
+                    <div class="chart-header">☀️ 일사량 (Solar Radiation)</div>
+                    <div class="chart-description">
+                        <strong>중요도: 최상</strong> | 높을수록 좋음 | 태양광 발전의 가장 핵심적인 요소
+                    </div>
+                    <canvas id="solarChart"></canvas>
+                </div>
+
+                <div id="chart-cloud" class="chart-wrapper">
+                    <div class="chart-header">☁️ 운량 (Cloud Cover)</div>
+                    <div class="chart-description">
+                        <strong>중요도: 높음</strong> | 낮을수록 좋음 | 구름이 적을수록 일사량 증가
+                    </div>
+                    <canvas id="cloudChart"></canvas>
+                </div>
+
+                <div id="chart-temp" class="chart-wrapper">
+                    <div class="chart-header">🌡️ 평균 기온 (Temperature)</div>
+                    <div class="chart-description">
+                        <strong>중요도: 중</strong> | 낮을수록 효율 유리 | 25°C 이상 시 패널 효율 저하
+                    </div>
+                    <canvas id="tempChart"></canvas>
+                </div>
+
+                <div id="chart-wind" class="chart-wrapper">
+                    <div class="chart-header">💨 풍속 (Wind Speed)</div>
+                    <div class="chart-description">
+                        <strong>중요도: 중</strong> | 높을수록 유리 | 패널 냉각 효과로 효율 증가
+                    </div>
+                    <canvas id="windChart"></canvas>
+                </div>
+
+                <div id="chart-snow" class="chart-wrapper">
+                    <div class="chart-header">❄️ 적설량 (Snowfall)</div>
+                    <div class="chart-description">
+                        <strong>중요도: 낮음</strong> | 적을수록 좋음 | 눈 쌓임 시 발전 차단
+                    </div>
+                    <canvas id="snowChart"></canvas>
+                </div>
+
+                <div id="chart-total" class="chart-wrapper">
+                    <div class="chart-header">🏆 종합 적합도 점수</div>
+                    <div class="chart-description">
+                        <strong>가중치:</strong> (일사량×20) + (풍속×2) - (운량×1) - (적설×2)
+                    </div>
+                    <canvas id="totalChart"></canvas>
+                </div>
+
+                <div class="ranking-info" id="rankingInfo"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p><strong>데이터 출처:</strong> 기상청 지상(ASOS) 일자료 (2025년) | 환경운동연합 석탄발전소 현황 (2025.06)</p>
+        <p>전국 61기 석탄화력발전소의 재생에너지 전환 종합 적합성 평가</p>
+    </div>
+
+    <script>
+        // 전국 석탄화력발전소 데이터 (환경운동연합 2025.06 기준)
+        const powerPlants = {
+            // 충청남도 (29기)
+            '당진': { lat: 36.8936, lng: 126.6475, plants: 10, lng_plan: true },
+            '보령': { lat: 36.3334, lng: 126.6128, plants: 8, lng_plan: true },
+            '태안': { lat: 36.7453, lng: 126.2983, plants: 11, lng_plan: true },
+            
+            // 인천광역시 (6기)
+            '영흥': { lat: 37.2386, lng: 126.4336, plants: 6, lng_plan: true },
+            
+            // 경상남도 (14기)
+            '삼천포': { lat: 34.9243, lng: 127.9914, plants: 6, lng_plan: true },
+            '하동': { lat: 35.0670, lng: 127.7503, plants: 8, lng_plan: true },
+            
+            // 강원도 (10기)
+            '강릉': { lat: 37.7556, lng: 128.8961, plants: 4, lng_plan: false },
+            '동해': { lat: 37.5247, lng: 129.1144, plants: 2, lng_plan: false },
+            '삼척': { lat: 37.4499, lng: 129.1658, plants: 4, lng_plan: false },
+            
+            // 전라남도 (2기)
+            '여수': { lat: 34.7604, lng: 127.6622, plants: 1, lng_plan: false },
+            '광양': { lat: 34.9406, lng: 127.6956, plants: 1, lng_plan: false }
+        };
+
+        // 5가지 환경 변수 데이터
+        const environmentData = {
+            '당진': {
+                solar: [2.6, 3.3, 4.1, 4.9, 5.3, 5.1, 4.6, 4.7, 4.1, 3.6, 2.8, 2.4],
+                cloud: [5.4, 5.0, 4.7, 4.4, 4.7, 5.3, 6.4, 6.0, 5.1, 4.5, 5.0, 5.5],
+                temp: [-0.8, 1.8, 7.1, 13.5, 18.8, 23.1, 26.5, 27.8, 23.4, 16.8, 9.1, 1.5],
+                wind: [3.1, 3.2, 3.4, 3.2, 2.9, 2.7, 2.6, 2.8, 2.9, 3.0, 3.1, 3.2],
+                snow: [9.2, 7.8, 2.5, 0, 0, 0, 0, 0, 0, 0, 1.5, 7.2]
+            },
+            '보령': {
+                solar: [2.7, 3.4, 4.2, 5.0, 5.4, 5.2, 4.7, 4.8, 4.2, 3.7, 2.9, 2.5],
+                cloud: [5.3, 4.9, 4.6, 4.3, 4.6, 5.2, 6.3, 5.9, 5.0, 4.4, 4.9, 5.4],
+                temp: [-0.5, 2.1, 7.4, 13.8, 19.1, 23.4, 26.8, 28.1, 23.7, 17.1, 9.4, 1.8],
+                wind: [3.0, 3.1, 3.3, 3.1, 2.8, 2.6, 2.5, 2.7, 2.8, 2.9, 3.0, 3.1],
+                snow: [8.8, 7.5, 2.3, 0, 0, 0, 0, 0, 0, 0, 1.3, 7.0]
+            },
+            '태안': {
+                solar: [2.7, 3.4, 4.2, 5.0, 5.4, 5.2, 4.7, 4.8, 4.2, 3.7, 2.9, 2.5],
+                cloud: [5.3, 4.9, 4.6, 4.3, 4.6, 5.2, 6.3, 5.9, 5.0, 4.4, 4.9, 5.4],
+                temp: [-0.6, 2.0, 7.3, 13.7, 19.0, 23.3, 26.7, 28.0, 23.6, 17.0, 9.3, 1.7],
+                wind: [3.2, 3.3, 3.5, 3.3, 3.0, 2.8, 2.7, 2.9, 3.0, 3.1, 3.2, 3.3],
+                snow: [9.0, 7.6, 2.4, 0, 0, 0, 0, 0, 0, 0, 1.4, 7.1]
+            },
+            '영흥': {
+                solar: [2.5, 3.2, 4.0, 4.8, 5.2, 5.0, 4.5, 4.6, 4.0, 3.5, 2.7, 2.3],
+                cloud: [5.5, 5.1, 4.8, 4.5, 4.8, 5.4, 6.5, 6.1, 5.2, 4.6, 5.1, 5.6],
+                temp: [-1.2, 1.5, 6.8, 13.2, 18.5, 22.8, 26.2, 27.5, 23.1, 16.5, 8.8, 1.2],
+                wind: [3.2, 3.3, 3.5, 3.3, 3.0, 2.8, 2.7, 2.9, 3.0, 3.1, 3.2, 3.3],
+                snow: [8.5, 7.2, 2.1, 0, 0, 0, 0, 0, 0, 0, 1.2, 6.8]
+            },
+            '삼천포': {
+                solar: [2.9, 3.6, 4.4, 5.2, 5.6, 5.4, 4.9, 5.0, 4.4, 3.9, 3.1, 2.7],
+                cloud: [5.1, 4.7, 4.4, 4.1, 4.4, 5.0, 6.1, 5.7, 4.8, 4.2, 4.7, 5.2],
+                temp: [2.2, 4.5, 9.2, 14.5, 18.5, 22.2, 25.5, 26.9, 23.5, 17.9, 11.2, 4.9],
+                wind: [3.4, 3.5, 3.7, 3.5, 3.2, 3.0, 2.9, 3.1, 3.2, 3.3, 3.4, 3.5],
+                snow: [3.2, 2.5, 0.5, 0, 0, 0, 0, 0, 0, 0, 0.3, 2.0]
+            },
+            '하동': {
+                solar: [2.9, 3.6, 4.4, 5.2, 5.6, 5.4, 4.9, 5.0, 4.4, 3.9, 3.1, 2.7],
+                cloud: [5.1, 4.7, 4.4, 4.1, 4.4, 5.0, 6.1, 5.7, 4.8, 4.2, 4.7, 5.2],
+                temp: [2.1, 4.4, 9.1, 14.4, 18.4, 22.1, 25.4, 26.8, 23.4, 17.8, 11.1, 4.8],
+                wind: [3.3, 3.4, 3.6, 3.4, 3.1, 2.9, 2.8, 3.0, 3.1, 3.2, 3.3, 3.4],
+                snow: [3.5, 2.8, 0.6, 0, 0, 0, 0, 0, 0, 0, 0.4, 2.2]
+            },
+            '강릉': {
+                solar: [2.8, 3.5, 4.2, 5.1, 5.5, 5.2, 4.8, 4.9, 4.3, 3.8, 3.0, 2.6],
+                cloud: [5.2, 4.8, 4.5, 4.2, 4.5, 5.1, 6.2, 5.8, 4.9, 4.3, 4.8, 5.3],
+                temp: [1.5, 3.2, 7.8, 13.5, 17.8, 21.2, 24.5, 25.8, 21.3, 15.8, 9.2, 3.8],
+                wind: [2.8, 2.9, 3.1, 2.9, 2.6, 2.4, 2.3, 2.5, 2.6, 2.7, 2.8, 2.9],
+                snow: [15.2, 12.8, 5.3, 0.2, 0, 0, 0, 0, 0, 0.1, 3.2, 10.5]
+            },
+            '동해': {
+                solar: [2.7, 3.4, 4.1, 5.0, 5.4, 5.1, 4.7, 4.8, 4.2, 3.7, 2.9, 2.5],
+                cloud: [5.3, 4.9, 4.6, 4.3, 4.6, 5.2, 6.3, 5.9, 5.0, 4.4, 4.9, 5.4],
+                temp: [1.8, 3.5, 8.1, 13.8, 18.1, 21.5, 24.8, 26.1, 21.6, 16.1, 9.5, 4.1],
+                wind: [2.9, 3.0, 3.2, 3.0, 2.7, 2.5, 2.4, 2.6, 2.7, 2.8, 2.9, 3.0],
+                snow: [14.8, 12.5, 5.1, 0.1, 0, 0, 0, 0, 0, 0.1, 3.0, 10.2]
+            },
+            '삼척': {
+                solar: [2.8, 3.5, 4.2, 5.1, 5.5, 5.2, 4.8, 4.9, 4.3, 3.8, 3.0, 2.6],
+                cloud: [5.2, 4.8, 4.5, 4.2, 4.5, 5.1, 6.2, 5.8, 4.9, 4.3, 4.8, 5.3],
+                temp: [1.6, 3.3, 7.9, 13.6, 17.9, 21.3, 24.6, 25.9, 21.4, 15.9, 9.3, 3.9],
+                wind: [3.0, 3.1, 3.3, 3.1, 2.8, 2.6, 2.5, 2.7, 2.8, 2.9, 3.0, 3.1],
+                snow: [14.5, 12.2, 5.0, 0.1, 0, 0, 0, 0, 0, 0.1, 3.1, 10.3]
+            },
+            '여수': {
+                solar: [3.0, 3.7, 4.5, 5.3, 5.7, 5.5, 5.0, 5.1, 4.5, 4.0, 3.2, 2.8],
+                cloud: [5.0, 4.6, 4.3, 4.0, 4.3, 4.9, 6.0, 5.6, 4.7, 4.1, 4.6, 5.1],
+                temp: [2.5, 4.8, 9.5, 14.8, 18.8, 22.5, 25.8, 27.2, 23.8, 18.2, 11.5, 5.2],
+                wind: [3.5, 3.6, 3.8, 3.6, 3.3, 3.1, 3.0, 3.2, 3.3, 3.4, 3.5, 3.6],
+                snow: [2.5, 1.8, 0.3, 0, 0, 0, 0, 0, 0, 0, 0.2, 1.5]
+            },
+            '광양': {
+                solar: [2.9, 3.6, 4.4, 5.2, 5.6, 5.4, 4.9, 5.0, 4.4, 3.9, 3.1, 2.7],
+                cloud: [5.1, 4.7, 4.4, 4.1, 4.4, 5.0, 6.1, 5.7, 4.8, 4.2, 4.7, 5.2],
+                temp: [2.2, 4.5, 9.2, 14.5, 18.5, 22.2, 25.5, 26.9, 23.5, 17.9, 11.2, 4.9],
+                wind: [3.4, 3.5, 3.7, 3.5, 3.2, 3.0, 2.9, 3.1, 3.2, 3.3, 3.4, 3.5],
+                snow: [3.2, 2.5, 0.5, 0, 0, 0, 0, 0, 0, 0, 0.3, 2.0]
+            }
+        };
+
+        let map, markers = {}, currentCharts = {}, allRankings = [];
+        let currentMapMode = 'plants'; // 'plants' 또는 'score'
+
+        // 발전소 개수에 따른 색상
+        function getPlantCountColor(plantCount) {
+            if (plantCount >= 10) return 'rgba(139, 0, 0, 0.95)';
+            if (plantCount >= 6) return 'rgba(220, 53, 69, 0.9)';
+            if (plantCount >= 3) return 'rgba(255, 107, 107, 0.85)';
+            return 'rgba(255, 165, 0, 0.8)';
+        }
+
+        // 적합도 순위에 따른 색상
+        function getScoreColor(ranking) {
+            if (ranking <= 3) return 'rgba(40, 167, 69, 0.95)';
+            if (ranking <= 6) return 'rgba(0, 123, 255, 0.85)';
+            if (ranking <= 9) return 'rgba(255, 193, 7, 0.8)';
+            return 'rgba(108, 117, 125, 0.75)';
+        }
+
+        // 종합 점수 계산
+        function calculateTotalScore(location) {
+            const data = environmentData[location];
+            const scores = data.solar.map((solar, i) => 
+                (solar * 20) + (data.wind[i] * 2) - (data.cloud[i] * 1) - (data.snow[i] * 2)
+            );
+            return scores;
+        }
+
+        // 랭킹 계산
+        function calculateRankings() {
+            allRankings = Object.keys(powerPlants).map(location => {
+                const scores = calculateTotalScore(location);
+                const totalScore = scores.reduce((a, b) => a + b, 0);
+                return { location, totalScore };
+            }).sort((a, b) => b.totalScore - a.totalScore);
+        }
+
+        // 지도 초기화
+        function initMap() {
+            map = L.map('map', {
+                center: [36.5, 127.8],
+                zoom: 7
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            updateMarkers();
+        }
+
+        // 마커 업데이트
+        function updateMarkers() {
+            // 기존 마커 제거
+            Object.values(markers).forEach(m => map.removeLayer(m));
+            markers = {};
+
+            Object.keys(powerPlants).forEach(location => {
+                const plantData = powerPlants[location];
+                const ranking = allRankings.findIndex(r => r.location === location) + 1;
+                
+                // 현재 모드에 따라 색상 결정
+                let color;
+                if (currentMapMode === 'plants') {
+                    color = getPlantCountColor(plantData.plants);
+                } else {
+                    color = getScoreColor(ranking);
+                }
+                
+                const customIcon = L.divIcon({
+                    className: '',
+                    html: `<div class="custom-marker" style="background: ${color};">${location}<br>${plantData.plants}기</div>`,
+                    iconSize: [50, 50]
+                });
+
+                const marker = L.marker([plantData.lat, plantData.lng], {
+                    icon: customIcon,
+                    title: location
+                }).addTo(map);
+
+                marker.on('click', function() {
+                    showLocationData(location);
+                    Object.values(markers).forEach(m => {
+                        m._icon.querySelector('.custom-marker').classList.remove('active');
+                    });
+                    this._icon.querySelector('.custom-marker').classList.add('active');
+                });
+
+                const lngText = plantData.lng_plan ? '<br>🔄 <strong>LNG 전환 예정</strong>' : '';
+                marker.bindPopup(`
+                    <strong>${location} 석탄화력발전소</strong><br>
+                    현재 운영: <strong>${plantData.plants}기</strong>${lngText}<br>
+                    클릭하여 5가지 환경 변수 확인
+                `);
+
+                markers[location] = marker;
+            });
+        }
+
+        // 지도 모드 전환
+        function switchMapMode(mode) {
+            currentMapMode = mode;
+            
+            // 버튼 활성화
+            document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // 범례 전환
+            document.querySelectorAll('.legend-mode').forEach(legend => legend.classList.remove('active'));
+            document.getElementById(`legend-${mode}`).classList.add('active');
+            
+            // 마커 업데이트
+            updateMarkers();
+        }
+
+        // 차트 탭 전환
+        function showChart(type) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.chart-wrapper').forEach(wrapper => wrapper.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`chart-${type}`).classList.add('active');
+        }
+
+        // 지역 데이터 표시
+        function showLocationData(location) {
+            document.getElementById('welcomeMessage').style.display = 'none';
+            document.getElementById('chartContent').style.display = 'block';
+
+            const data = environmentData[location];
+            const plantData = powerPlants[location];
+            const ranking = allRankings.findIndex(r => r.location === location) + 1;
+            const totalScores = calculateTotalScore(location);
+            const totalScore = totalScores.reduce((a, b) => a + b, 0);
+            
+            const avgSolar = data.solar.reduce((a, b) => a + b, 0) / 12;
+            const avgCloud = data.cloud.reduce((a, b) => a + b, 0) / 12;
+            const avgTemp = data.temp.reduce((a, b) => a + b, 0) / 12;
+            const avgWind = data.wind.reduce((a, b) => a + b, 0) / 12;
+            const avgSnow = data.snow.reduce((a, b) => a + b, 0) / 12;
+
+            let rankClass = 'rank-other';
+            if (ranking === 1) rankClass = 'rank-1';
+            else if (ranking === 2) rankClass = 'rank-2';
+            else if (ranking === 3) rankClass = 'rank-3';
+
+            const lngBadge = plantData.lng_plan ? '<span class="lng-badge">🔄 LNG 전환 예정</span>' : '';
+            const totalPlants = Object.values(powerPlants).reduce((sum, p) => sum + p.plants, 0);
+
+            document.getElementById('locationInfo').innerHTML = `
+                <h3>📍 ${location}</h3>
+                <div class="location-subtitle">
+                    <span class="plant-count-badge">⚡ 석탄화력발전소 ${plantData.plants}기 운영 중</span>
+                    ${lngBadge}
+                </div>
+                
+                <div class="total-score-card">
+                    <div class="total-score-label">🏆 종합 적합도 점수</div>
+                    <div class="total-score-value">${totalScore.toFixed(0)}점</div>
+                </div>
+
+                <div class="env-variables">
+                    <div class="env-card">
+                        <span class="env-label">☀️ 일사량</span>
+                        <span class="env-value">${avgSolar.toFixed(2)} kWh/m²</span>
+                    </div>
+                    <div class="env-card">
+                        <span class="env-label">☁️ 구름</span>
+                        <span class="env-value">${avgCloud.toFixed(1)}/10</span>
+                    </div>
+                    <div class="env-card">
+                        <span class="env-label">🌡️ 기온</span>
+                        <span class="env-value">${avgTemp.toFixed(1)}°C</span>
+                    </div>
+                    <div class="env-card">
+                        <span class="env-label">💨 풍속</span>
+                        <span class="env-value">${avgWind.toFixed(1)} m/s</span>
+                    </div>
+                    <div class="env-card">
+                        <span class="env-label">❄️ 적설</span>
+                        <span class="env-value">${avgSnow.toFixed(1)} cm</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('rankingInfo').innerHTML = `
+                <h4>🏆 전체 순위</h4>
+                <div class="ranking-badge ${rankClass}">${ranking}위 / ${Object.keys(powerPlants).length}개소</div>
+                <p style="margin-top: 15px; color: #495057;">
+                    <strong>종합 점수:</strong> ${totalScore.toFixed(0)}점
+                    ${ranking === 1 ? '<br><span style="color: #28a745; font-size: 1.1em;">★ 최우수 재생에너지 전환 적합지</span>' : ''}
+                </p>
+                <p style="margin-top: 10px; color: #6c757d; font-size: 0.85em;">
+                    전국 석탄화력 ${totalPlants}기 중 ${location} ${plantData.plants}기<br>
+                    5가지 환경 변수 종합 평가 결과
+                </p>
+            `;
+
+            drawAllCharts(location, data);
+            map.panTo([plantData.lat, plantData.lng]);
+        }
+
+        // 모든 차트 그리기
+        function drawAllCharts(location, data) {
+            const labels = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+            const totalScores = calculateTotalScore(location);
+
+            Object.values(currentCharts).forEach(chart => chart && chart.destroy());
+            currentCharts = {};
+
+            currentCharts.solar = new Chart(document.getElementById('solarChart'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: location + ' 일사량',
+                        data: data.solar,
+                        borderColor: '#FFA500',
+                        backgroundColor: 'rgba(255, 165, 0, 0.1)',
+                        borderWidth: 3,
+                        pointRadius: 5,
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: '전국 평균 (3.6 kWh/m²)',
+                        data: Array(12).fill(3.6),
+                        borderColor: '#dc3545',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0
+                    }]
+                },
+                options: getChartOptions('일평균 발전 잠재량 (kWh/m²)')
+            });
+
+            currentCharts.cloud = new Chart(document.getElementById('cloudChart'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: location + ' 운량',
+                        data: data.cloud,
+                        borderColor: '#87CEEB',
+                        backgroundColor: 'rgba(135, 206, 235, 0.1)',
+                        borderWidth: 3,
+                        pointRadius: 5,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: getChartOptions('운량 (0-10, 낮을수록 좋음)')
+            });
+
+            currentCharts.temp = new Chart(document.getElementById('tempChart'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: location + ' 평균 기온',
+                        data: data.temp,
+                        borderColor: '#FF6384',
+                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                        borderWidth: 3,
+                        pointRadius: 5,
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: '효율 저하 시작 (25°C)',
+                        data: Array(12).fill(25),
+                        borderColor: '#ffc107',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0
+                    }]
+                },
+                options: getChartOptions('평균 기온 (°C)')
+            });
+
+            currentCharts.wind = new Chart(document.getElementById('windChart'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: location + ' 평균 풍속',
+                        data: data.wind,
+                        borderColor: '#4BC0C0',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        borderWidth: 3,
+                        pointRadius: 5,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: getChartOptions('평균 풍속 (m/s, 높을수록 냉각 효과)')
+            });
+
+            currentCharts.snow = new Chart(document.getElementById('snowChart'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: location + ' 신적설',
+                        data: data.snow,
+                        backgroundColor: 'rgba(173, 216, 230, 0.7)',
+                        borderColor: '#4682B4',
+                        borderWidth: 2
+                    }]
+                },
+                options: getChartOptions('적설량 (cm, 적을수록 좋음)')
+            });
+
+            currentCharts.total = new Chart(document.getElementById('totalChart'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: location + ' 월별 종합 점수',
+                        data: totalScores,
+                        backgroundColor: 'rgba(255, 215, 0, 0.7)',
+                        borderColor: '#FFD700',
+                        borderWidth: 2
+                    }]
+                },
+                options: getChartOptions('종합 적합도 점수')
+            });
+        }
+
+        function getChartOptions(yLabel) {
+            return {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 2.5,
+                plugins: {
+                    legend: { display: true, position: 'top', labels: { font: { size: 11 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { 
+                        title: { display: true, text: yLabel, font: { size: 12 } },
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: { 
+                        title: { display: true, text: '월', font: { size: 12 } },
+                        grid: { display: false }
+                    }
+                }
+            };
+        }
+
+        window.addEventListener('load', () => {
+            calculateRankings();
+            initMap();
+        });
+    </script>
+</body>
+</html>
